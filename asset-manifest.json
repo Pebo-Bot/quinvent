@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/quinvent/static/css/main.e7590770.css",
+    "main.js": "/quinvent/static/js/main.4e3d6a01.js",
+    "static/js/453.b4fbae8b.chunk.js": "/quinvent/static/js/453.b4fbae8b.chunk.js",
+    "index.html": "/quinvent/index.html",
+    "main.e7590770.css.map": "/quinvent/static/css/main.e7590770.css.map",
+    "main.4e3d6a01.js.map": "/quinvent/static/js/main.4e3d6a01.js.map",
+    "453.b4fbae8b.chunk.js.map": "/quinvent/static/js/453.b4fbae8b.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e7590770.css",
+    "static/js/main.4e3d6a01.js"
+  ]
+}

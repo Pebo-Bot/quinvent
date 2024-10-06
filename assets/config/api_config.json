@@ -1,0 +1,27 @@
+{
+    "apis": {
+      "Replicate": {
+        "models": {
+          "StableDiffusion": {
+            "versions": ["v1.4", "v1.5"]
+          }
+        },
+        "auth": {
+          "token": "YOUR_REPLICATE_API_KEY"
+        }
+      },
+      "OpenAI": {
+        "models": {
+          "DALL-E": {
+            "versions": ["v2"]
+          },
+          "GPT": {
+            "versions": ["4", "3.5"]
+          }
+        },
+        "auth": {
+          "token": "YOUR_OPENAI_API_KEY"
+        }
+      }
+    }
+  }
