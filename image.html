@@ -38,10 +38,10 @@
                 }
 
                 const data = await response.json();
-                const img = document.getElementById('lamtest');
-                //img.src = data.image_url;
-                //img.style.display = 'block';
-                img.innerText = data;
+                const img = document.getElementById('image');
+                img.src = data.image_url;
+                img.style.display = 'block';
+                img.innerText = data.image_url;
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to generate image.');
