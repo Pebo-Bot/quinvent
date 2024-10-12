@@ -38,7 +38,7 @@
                 }
 
                 const data = await response.json();
-                console.log(data);
+                console.log(data.image_url);
                 const img = document.getElementById('image');
                 img.src = data.image_url;
                 img.style.display = 'block';
