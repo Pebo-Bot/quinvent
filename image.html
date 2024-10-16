@@ -22,7 +22,7 @@
             margin: 10px 0;
         }
 
-        input[type="text"] {
+        input[type="text"], select {
             width: 80%;
             max-width: 600px;
             padding: 10px;
@@ -70,6 +70,10 @@
 <body>
     <h1>Generate an Image</h1>
     <input type="text" id="prompt" placeholder="Enter your prompt">
+    <select id="model" name="model>
+        <option value="Pro">Pro</option>
+        <option value="Dev">Pro</option>
+    </select>
     <button onclick="generateImage()">Generate</button>
     <div>
         <img id="image" src="" alt="Generated Image">
@@ -78,6 +82,7 @@
     <script>
         async function generateImage() {
             const prompt = document.getElementById('prompt').value.trim();
+            const model = document.getElementById('model');
             if (!prompt) {
                 alert('Please enter a prompt.');
                 return;
@@ -89,7 +94,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify({ prompt: prompt, model: model })
                 });
 
                 if (!response.ok) {
