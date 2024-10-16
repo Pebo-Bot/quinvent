@@ -104,7 +104,7 @@
                 }
 
                 const data = await response.json();
-                const parsedBody = JSON.parse(data.body);
+                const parsedBody = data.body;
                 console.log(parsedBody.image_url);
                 const img = document.getElementById('image');
                 img.src = parsedBody.image_url;
