@@ -75,7 +75,7 @@
             <option value="Pro">Pro</option>
             <option value="Dev">Dev</option>
         </select>
-        <button onclick="generateImage()">Generate</button>
+        <button type="button" onclick="generateImage()">Generate</button>
     </form>
     <div>
         <img id="image" src="" alt="Generated Image">
@@ -84,7 +84,7 @@
     <script>
         async function generateImage() {
             const prompt = document.getElementById('prompt').value.trim();
-            const model = document.getElementById('model');
+            const model = document.getElementById('model').value;
             if (!prompt) {
                 alert('Please enter a prompt.');
                 return;
