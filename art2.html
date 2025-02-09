@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>3D Art Museum with Zoom and Resolution Control</title>
+    <!-- Include A-Frame -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <style>
+      body { margin: 0; }
+      /* Simple overlay for UI controls */
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+        border-radius: 5px;
+        font-family: sans-serif;
+      }
+      #ui button, #ui select {
+        margin: 5px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- UI Controls for Zoom and Resolution -->
+    <div id="ui">
+      <button id="zoomIn">Zoom In</button>
+      <button id="zoomOut">Zoom Out</button>
+      <label for="resolution">Resolution:</label>
+      <select id="resolution">
+        <option value="native">Native</option>
+        <option value="4k">4K</option>
+        <option value="2k">2K</option>
+      </select>
+    </div>
+
+    <!-- A-Frame scene -->
+    <a-scene>
+      <!-- A camera with an id so we can adjust its position -->
+      <a-camera id="camera" position="0 1.6 0"></a-camera>
+
+      <!-- The artwork plane -->
+      <a-plane id="artwork" position="0 1.6 -3" width="3" height="2" color="#FFF"></a-plane>
+      
+      <!-- Text entity for artwork details -->
+      <a-text id="info" value="Loading artwork..." align="center" position="0 0.3 -3" width="4"></a-text>
+
+      <!-- Simple sky background -->
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+
+    <script>
+      let nativeImageUrl = "";
+
+      // Fetch a random artwork that has an image from The Met API.
+      function fetchRandomArtwork(attempts = 5) {
+        if (attempts <= 0) {
+          document.getElementById('info').setAttribute('value', 'No artwork with image found.');
+          return;
+        }
+        fetch("https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=*")
+          .then(response => response.json())
+          .then(data => {
+            const ids = data.objectIDs;
+            const randomId = ids[Math.floor(Math.random() * ids.length)];
+            return fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`);
+          })
+          .then(response => response.json())
+          .then(artwork => {
+            // Ensure the artwork has a primary image and dimensions
+            if (artwork.primaryImage && artwork.primaryImage !== "" && artwork.dimensions) {
+              nativeImageUrl = artwork.primaryImage;
+              document.getElementById('artwork').setAttribute('src', nativeImageUrl);
+              const infoText = "Title: " + artwork.title +
+                               "\nArtist: " + artwork.artistDisplayName +
+                               "\nDimensions: " + artwork.dimensions;
+              document.getElementById('info').setAttribute('value', infoText);
+            } else {
+              fetchRandomArtwork(attempts - 1);
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching artwork:", error);
+            document.getElementById('info').setAttribute('value', 'Error loading artwork.');
+          });
+      }
+      
+      fetchRandomArtwork();
+
+      // Zoom in/out controls: Adjust the camera's Z-position
+      document.getElementById('zoomIn').addEventListener('click', function () {
+        const camera = document.getElementById('camera');
+        let pos = camera.getAttribute('position');
+        // Move camera closer (increasing z moves it forward in A-Frame if starting at 0)
+        pos.z += 0.5;
+        camera.setAttribute('position', pos);
+      });
+
+      document.getElementById('zoomOut').addEventListener('click', function () {
+        const camera = document.getElementById('camera');
+        let pos = camera.getAttribute('position');
+        // Move camera backward
+        pos.z -= 0.5;
+        camera.setAttribute('position', pos);
+      });
+
+      // Generate a resized version of the image using an offscreen canvas.
+      function generateResizedImage(url, targetWidth, callback) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = function () {
+          const scale = targetWidth / img.width;
+          const targetHeight = img.height * scale;
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+          callback(canvas.toDataURL());
+        };
+        img.onerror = function () {
+          console.error("Error loading image for resizing.");
+          callback(null);
+        };
+        img.src = url;
+      }
+
+      // Resolution selection handler.
+      document.getElementById('resolution').addEventListener('change', function (e) {
+        const bucket = e.target.value;
+        if (bucket === "native") {
+          document.getElementById('artwork').setAttribute('src', nativeImageUrl);
+        } else if (bucket === "4k") {
+          // Use target width 3840 (if native image is larger, otherwise it will simply use the native image)
+          generateResizedImage(nativeImageUrl, 3840, function (dataUrl) {
+            if (dataUrl) {
+              document.getElementById('artwork').setAttribute('src', dataUrl);
+            }
+          });
+        } else if (bucket === "2k") {
+          // Use target width 2048 for 2K resolution
+          generateResizedImage(nativeImageUrl, 2048, function (dataUrl) {
+            if (dataUrl) {
+              document.getElementById('artwork').setAttribute('src', dataUrl);
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
