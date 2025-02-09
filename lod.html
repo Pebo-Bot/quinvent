@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Dynamic LOD Texture Streaming in VR</title>
+    <!-- Include A-Frame -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <style>
+      body { margin: 0; }
+      /* Simple UI overlay for controls */
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(255,255,255,0.9);
+        padding: 10px;
+        border-radius: 5px;
+        font-family: sans-serif;
+        z-index: 10;
+      }
+      #ui label, #ui button, #ui input {
+        margin: 5px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- UI Controls: LOD slider and zoom buttons -->
+    <div id="ui">
+      <label for="lodSlider">LOD Factor:</label>
+      <input id="lodSlider" type="range" min="0.0" max="5.0" step="0.1" value="1.0">
+      <br>
+      <button id="zoomIn">Zoom In</button>
+      <button id="zoomOut">Zoom Out</button>
+    </div>
+    
+    <a-scene>
+      <!-- Preload a high resolution texture in assets.
+           (This example uses a publicly available painting from The Met.) -->
+      <a-assets>
+        <img id="highResTexture" crossorigin="anonymous" src="https://images.metmuseum.org/CRDImages/ad/original/DT1567.jpg">
+      </a-assets>
+      
+      <!-- A-Frame camera -->
+      <a-camera id="camera" position="0 1.6 0"></a-camera>
+      
+      <!-- A plane entity that will display our high-resolution texture
+           via the custom "lod-texture" component -->
+      <a-entity id="artworkPlane" geometry="primitive: plane; width: 4; height: 3" position="0 1.6 -5"
+                lod-texture="src: #highResTexture; lodFactor: 1.0"></a-entity>
+      
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+    
+    <script>
+      // Register a custom A-Frame component that creates a Three.js ShaderMaterial.
+      // This shader uses texture2DLod (available in WebGL2) to sample the texture at a specified LOD.
+      AFRAME.registerComponent('lod-texture', {
+        schema: {
+          src: {type: 'selector'},
+          lodFactor: {type: 'number', default: 1.0}
+        },
+        init: function () {
+          const data = this.data;
+          const el = this.el;
+          const textureLoader = new THREE.TextureLoader();
+          // Load the texture from the provided asset; ensure CORS is enabled.
+          this.texture = textureLoader.load(data.src.getAttribute('src'));
+          this.texture.generateMipmaps = true;
+          this.texture.minFilter = THREE.LinearMipmapLinearFilter;
+          
+          // Create a custom shader material.
+          // The fragment shader uses texture2DLod for dynamic LOD sampling.
+          this.material = new THREE.ShaderMaterial({
+            uniforms: {
+              src: { value: this.texture },
+              lodFactor: { value: data.lodFactor }
+            },
+            vertexShader: `
+              varying vec2 vUV;
+              void main() {
+                vUV = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              precision highp float;
+              uniform sampler2D src;
+              uniform float lodFactor;
+              varying vec2 vUV;
+              void main() {
+                // Use texture2DLod to sample the texture at a dynamic LOD level.
+                vec4 color = texture2DLod(src, vUV, lodFactor);
+                gl_FragColor = color;
+              }
+            `
+          });
+          
+          // When the mesh is ready, assign our shader material.
+          el.getObject3D('mesh').material = this.material;
+        },
+        update: function () {
+          // Update the lodFactor uniform whenever the component data changes.
+          this.material.uniforms.lodFactor.value = this.data.lodFactor;
+        }
+      });
+      
+      // Update the LOD factor dynamically via a slider.
+      document.getElementById('lodSlider').addEventListener('input', function(event) {
+        const value = parseFloat(event.target.value);
+        const artworkEl = document.getElementById('artworkPlane');
+        // Update the custom component attribute.
+        artworkEl.setAttribute('lod-texture', 'lodFactor', value);
+      });
+      
+      // Zoom controls: adjust the camera's z-position.
+      // "Zoom In" moves the camera closer to the object (decreasing z),
+      // "Zoom Out" moves it further away (increasing z).
+      document.getElementById('zoomIn').addEventListener('click', function() {
+        const camera = document.getElementById('camera');
+        const pos = camera.getAttribute('position');
+        pos.z -= 0.5;
+        camera.setAttribute('position', pos);
+      });
+      
+      document.getElementById('zoomOut').addEventListener('click', function() {
+        const camera = document.getElementById('camera');
+        const pos = camera.getAttribute('position');
+        pos.z += 0.5;
+        camera.setAttribute('position', pos);
+      });
+    </script>
+  </body>
+</html>
