@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Brick Breaking Game</title>
+    <!-- A-Frame library -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <!-- Physics system (powered by Cannon.js) -->
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v3.3.0/dist/aframe-physics-system.min.js"></script>
+    <script>
+      // Moves the paddle left/right when arrow keys are pressed.
+      AFRAME.registerComponent('paddle-controls', {
+        schema: { speed: {default: 0.2} },
+        init: function() {
+          var el = this.el;
+          window.addEventListener('keydown', function(e) {
+            var pos = el.getAttribute('position');
+            if (e.key === 'ArrowLeft') {
+              pos.x -= 0.2;
+            } else if (e.key === 'ArrowRight') {
+              pos.x += 0.2;
+            }
+            el.setAttribute('position', pos);
+          });
+        }
+      });
+
+      // Removes a brick when hit by the ball.
+      AFRAME.registerComponent('brick', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('collide', function(e) {
+            // Check that the colliding body is the ball (which has id="ball")
+            if (e.detail.body.el && e.detail.body.el.id === 'ball') {
+              el.parentNode.removeChild(el);
+            }
+          });
+        }
+      });
+
+      // Generates a grid of bricks when the scene loads.
+      AFRAME.registerComponent('brick-generator', {
+        init: function () {
+          var sceneEl = this.el;
+          var rows = 3;
+          var cols = 5;
+          var startX = -1.5;
+          var startY = 2;
+          var brickWidth = 0.6;
+          var brickHeight = 0.3;
+          var brickDepth = 0.2;
+          for (var i = 0; i < rows; i++) {
+            for (var j = 0; j < cols; j++) {
+              var brick = document.createElement('a-box');
+              brick.setAttribute('position', {
+                x: startX + j * (brickWidth + 0.1),
+                y: startY - i * (brickHeight + 0.1),
+                z: -3
+              });
+              brick.setAttribute('width', brickWidth);
+              brick.setAttribute('height', brickHeight);
+              brick.setAttribute('depth', brickDepth);
+              brick.setAttribute('color', '#FFC65D');
+              brick.setAttribute('static-body', '');
+              brick.setAttribute('brick', '');
+              sceneEl.appendChild(brick);
+            }
+          }
+        }
+      });
+
+      // Resets the ball when it falls below a threshold.
+      AFRAME.registerComponent('ball-reset', {
+        tick: function () {
+          var pos = this.el.getAttribute('position');
+          if (pos.y < 0) {
+            // Reset position
+            this.el.setAttribute('position', '0 1 -3');
+            // Reset physics velocity if available.
+            if (this.el.body) {
+              this.el.body.velocity.set(0.5, 0.5, -1);
+              this.el.body.angularVelocity.set(0, 0, 0);
+            }
+          }
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene physics="gravity: -9.8" brick-generator>
+      <!-- Sky background -->
+      <a-sky color="#ECECEC"></a-sky>
+
+      <!-- Walls (invisible, used to bounce the ball) -->
+      <a-box position="-2 1 -3" width="0.2" height="2" depth="10" static-body visible="false"></a-box>
+      <a-box position="2 1 -3" width="0.2" height="2" depth="10" static-body visible="false"></a-box>
+      <a-box position="0 2.5 -3" width="4" height="0.2" depth="10" static-body visible="false"></a-box>
+
+      <!-- Paddle (controlled with arrow keys) -->
+      <a-box id="paddle" position="0 0.5 -3" width="1.5" height="0.2" depth="0.3" color="#0000FF" static-body paddle-controls></a-box>
+
+      <!-- Ball (bounces with restitution, resets if it falls) -->
+      <a-sphere id="ball" position="0 1 -3" radius="0.15" color="#FF0000"
+                dynamic-body="shape: sphere; mass: 1; restitution: 0.9; linearDamping: 0; angularDamping: 0; velocity: 0.5 0.5 -1"
+                ball-reset></a-sphere>
+
+      <!-- Visual Floor (no physics body so the ball can fall past it) -->
+      <a-plane position="0 0 -3" rotation="-90 0 0" width="4" height="10" color="#7BC8A4"></a-plane>
+
+      <!-- Game instructions -->
+      <a-text value="Brick Breaker: Use Arrow keys to move paddle" position="-1 3 -3" color="#000"></a-text>
+
+      <!-- Camera with a mouse cursor (for non-VR testing) -->
+      <a-entity camera position="0 1.6 0">
+        <a-entity cursor="fuse: false; rayOrigin: mouse"
+                  geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                  material="color: black; shader: flat"
+                  position="0 0 -1">
+        </a-entity>
+      </a-entity>
+    </a-scene>
+  </body>
+</html>
