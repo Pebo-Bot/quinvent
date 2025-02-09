@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>3D Art Museum</title>
+    <!-- Include A-Frame -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <a-scene>
+      <!-- A plane to show the artwork -->
+      <a-plane id="artwork" position="0 1.6 -3" width="3" height="2" color="#FFF"></a-plane>
+      <!-- A text entity to display artwork info -->
+      <a-text id="info" value="Loading artwork..." align="center" position="0 0.3 -3" width="4"></a-text>
+      <!-- A simple sky background -->
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+
+    <script>
+      // Fetch a random artwork with an image using The Met's Open Access API.
+      function fetchRandomArtwork(attempts = 5) {
+        if (attempts <= 0) {
+          document.getElementById('info').setAttribute('value', 'No artwork with image found.');
+          return;
+        }
+        // Use the search endpoint with "q=*" and hasImages=true to limit to artworks with images.
+        fetch("https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=*")
+          .then(response => response.json())
+          .then(data => {
+            const ids = data.objectIDs;
+            const randomId = ids[Math.floor(Math.random() * ids.length)];
+            return fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`);
+          })
+          .then(response => response.json())
+          .then(artwork => {
+            // Ensure the artwork has a primary image and dimension info.
+            if (artwork.primaryImage && artwork.primaryImage !== "" && artwork.dimensions) {
+              // Set the image as the texture for the plane.
+              document.getElementById('artwork').setAttribute('src', artwork.primaryImage);
+              // Update text with title, artist, and dimensions.
+              const infoText = "Title: " + artwork.title +
+                               "\nArtist: " + artwork.artistDisplayName +
+                               "\nDimensions: " + artwork.dimensions;
+              document.getElementById('info').setAttribute('value', infoText);
+            } else {
+              // Retry if the selected artwork lacks required data.
+              fetchRandomArtwork(attempts - 1);
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching artwork:", error);
+            document.getElementById('info').setAttribute('value', 'Error loading artwork.');
+          });
+      }
+      
+      // Start by fetching a random artwork.
+      fetchRandomArtwork();
+    </script>
+  </body>
+</html>
